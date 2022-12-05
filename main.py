@@ -4,12 +4,11 @@ from kivy.app import App
 from kivy.uix.widget import Widget
 from kivy.uix.boxlayout import BoxLayout
 from kivy.properties import StringProperty, BooleanProperty
-# from kivy.garden.matplotlib.backend_kivyagg import FigureCanvasKivyAgg
 from kivy.lang import Builder
 
-from brainflow.board_shim import BoardShim, BrainFlowInputParams, LogLevels, BoardIds
-from brainflow.data_filter import DataFilter, AggOperations
-# import matplotlib.pyplot as plt
+from kivy.clock import Clock
+from functools import partial
+
 
 kv_file =  Builder.load_string('''
 
@@ -43,27 +42,50 @@ kv_file =  Builder.load_string('''
             
 ''')
 
+class DisplayData:
 
-class MyDisplayData(BoxLayout):
+    def start(self):
+        print('started streaming!! ')
+    
+    def start_stream(self):
+        Clock.schedule_interval(self.data_gen, 0.5)
+    
+    def data_gen(self, *args):
+        i = 0
+        data = i+1
+        return data
+    
+    def stop(self):
+        Clock.unschedule(self.data_gen)
+        print('streaming stopped!! ')
+
+class MyDisplayData(BoxLayout, DisplayData):
     display_text = StringProperty('Start Connection')
     connect_stream = BooleanProperty(True)
     data_stream = BooleanProperty(False)
-    
+    dis_flow = DisplayData()
+
     def on_btn_start(self):
         if self.connect_stream:
+            self.dis_flow.start()
             self.display_text = 'Connected... Stream to display data'
             self.connect_stream = False
             self.data_stream = True
+            print('start connection')
     
     def on_btn_data_stream(self):
         if self.data_stream:
+            self.dis_flow.start_stream()
             self.data_stream = False
-            self.display_text = 'Displaying data.....'
+            self.display_text = str(self.dis_flow.data_gen() + 1)  
+            print('Displaying data.....')
 
     def on_btn_stop(self):
+        self.dis_flow.stop()
         self.display_text = 'Start Connection'
         self.connect_stream = True
         self.data_stream = False
+        print('stop connection')
         
 class KivyApp(App):
     def build(self):
